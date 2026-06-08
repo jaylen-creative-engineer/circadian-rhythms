@@ -36,6 +36,8 @@ export function computeCircadianPrediction(input: CycleInput): CircadianPredicti
     wakeTime,
     groggy,
     hrvAdj,
+    sleepPerformance,
+    deepPct,
     calibration?.peak_offset_min ?? 0
   );
   const dip = computeDip(wakeTime, sleepPerformance, hrvAdj);
