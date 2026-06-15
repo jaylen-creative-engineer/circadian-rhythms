@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { syncAllWhoopUsers, syncWhoopForUser } from "@/lib/whoop/sync";
+import { processPendingWebhookEvents } from "@/lib/whoop/webhook-processor";
 import { resolveUserId } from "@/lib/predictions/service";
 
 function authorizeCron(request: Request): boolean {
@@ -14,8 +15,11 @@ export async function POST(request: Request) {
 
   try {
     if (isCron) {
-      const results = await syncAllWhoopUsers();
-      return NextResponse.json({ ok: true, results });
+      const [results, webhookResults] = await Promise.all([
+        syncAllWhoopUsers(),
+        processPendingWebhookEvents(),
+      ]);
+      return NextResponse.json({ ok: true, results, webhookResults });
     }
 
     const userId = await resolveUserId();

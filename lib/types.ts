@@ -48,9 +48,30 @@ export interface UserIntegration {
   id?: string;
   user_id: string;
   provider: "whoop";
+  whoop_user_id?: number | null;
   access_token: string;
   refresh_token: string;
   expires_at: string;
+}
+
+export type WebhookEventStatus =
+  | "pending"
+  | "processing"
+  | "processed"
+  | "failed"
+  | "skipped";
+
+export interface WebhookEvent {
+  id?: string;
+  trace_id: string;
+  event_type: string;
+  whoop_user_id: number;
+  resource_id: string;
+  payload: Record<string, unknown>;
+  status: WebhookEventStatus;
+  error_message?: string | null;
+  received_at?: string;
+  processed_at?: string | null;
 }
 
 export interface EnergyCycle {

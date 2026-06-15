@@ -1,5 +1,12 @@
 const WHOOP_API_BASE = "https://api.prod.whoop.com/developer/v2";
 
+export interface WhoopUserProfile {
+  user_id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+}
+
 export interface WhoopTokenResponse {
   access_token: string;
   refresh_token: string;
@@ -48,7 +55,7 @@ export interface WhoopSleepRecord {
 }
 
 export interface WhoopRecoveryRecord {
-  cycle_id: number;
+  cycle_id: string;
   sleep_id: string;
   user_id: number;
   created_at: string;
@@ -137,6 +144,35 @@ export class WhoopClient {
 
     return all;
   }
+
+  async getSleepById(sleepId: string): Promise<WhoopSleepRecord> {
+    return this.fetch<WhoopSleepRecord>(`/activity/sleep/${sleepId}`);
+  }
+
+  async getRecoveryBySleepId(
+    sleepId: string,
+    start: string,
+    end: string
+  ): Promise<WhoopRecoveryRecord | undefined> {
+    const recoveries = await this.getRecoveryCollection(start, end);
+    return recoveries.find((recovery) => recovery.sleep_id === sleepId);
+  }
+}
+
+export async function getWhoopUserProfile(accessToken: string): Promise<WhoopUserProfile> {
+  const res = await fetch(`${WHOOP_API_BASE}/user/profile/basic`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`WHOOP profile fetch failed: ${body}`);
+  }
+
+  return res.json() as Promise<WhoopUserProfile>;
 }
 
 export async function refreshWhoopToken(
