@@ -17,6 +17,7 @@ cp .env.example .env.local
 
 # Apply schema in Supabase SQL editor:
 # supabase/migrations/001_initial_schema.sql
+# supabase/migrations/002_recovery_sleep_debt.sql
 
 npm run dev
 ```

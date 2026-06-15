@@ -1,5 +1,5 @@
 import { addMinutes } from "date-fns";
-import type { HrvAdjustment } from "./adjustments";
+import type { CircadianModifiers } from "./modifiers";
 
 export interface DipWindow {
   start: Date;
@@ -10,24 +10,28 @@ export interface DipWindow {
 export function computeDip(
   wakeTime: Date,
   sleepPerformance: number,
-  hrvAdj: HrvAdjustment
+  modifiers: CircadianModifiers
 ): DipWindow {
   const baseOffsetMin = 6.5 * 60;
   const dipStart = addMinutes(wakeTime, baseOffsetMin);
   let dipDurationMin = 75;
 
-  dipDurationMin += hrvAdj.dipExtendMin;
-  dipDurationMin -= hrvAdj.dipCompressMin;
+  dipDurationMin += modifiers.dipExtendMin;
+  dipDurationMin -= modifiers.dipCompressMin;
 
   const perfScore = Math.max(0, Math.min(100, sleepPerformance));
   let depth: DipWindow["depth"];
-  if (perfScore >= 80) {
+  if (perfScore >= 80 && !modifiers.peakQualityDowngrade) {
     depth = "mild";
-  } else if (perfScore >= 60) {
+  } else if (perfScore >= 60 && modifiers.dipExtendMin < 10) {
     depth = "moderate";
   } else {
     depth = "deep";
     dipDurationMin += 15;
+  }
+
+  if (modifiers.peakQualityDowngrade && depth === "mild") {
+    depth = "moderate";
   }
 
   return {
