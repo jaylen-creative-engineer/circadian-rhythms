@@ -8,7 +8,7 @@ export interface SyncResult {
   userId: string;
 }
 
-async function getValidAccessToken(userId: string): Promise<string> {
+export async function getValidAccessToken(userId: string): Promise<string> {
   const supabase = createServiceClient();
 
   const { data: integration, error } = await supabase

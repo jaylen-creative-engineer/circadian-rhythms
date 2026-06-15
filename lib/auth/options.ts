@@ -1,8 +1,9 @@
 import type { NextAuthOptions } from "next-auth";
 import { createServiceClient } from "../supabase/server";
-import { exchangeWhoopCode } from "../whoop/client";
+import { exchangeWhoopCode, getWhoopUserProfile } from "../whoop/client";
 
 const WHOOP_SCOPES = [
+  "read:profile",
   "read:sleep",
   "read:recovery",
   "read:cycles",
@@ -29,8 +30,26 @@ export const authOptions: NextAuthOptions = {
         },
       },
       userinfo: {
-        async request() {
-          return { id: crypto.randomUUID(), name: "WHOOP User" };
+        async request({ tokens }) {
+          const profile = await getWhoopUserProfile(tokens.access_token as string);
+          const supabase = createServiceClient();
+
+          const { data: existing } = await supabase
+            .from("user_integrations")
+            .select("user_id")
+            .eq("provider", "whoop")
+            .eq("whoop_user_id", profile.user_id)
+            .maybeSingle();
+
+          const userId = existing?.user_id ?? crypto.randomUUID();
+          const name =
+            [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "WHOOP User";
+
+          return {
+            id: userId,
+            name,
+            whoopUserId: profile.user_id,
+          };
         },
       },
       clientId: process.env.WHOOP_CLIENT_ID,
@@ -39,6 +58,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: profile.id as string,
           name: (profile.name as string) ?? "WHOOP User",
+          whoopUserId: (profile as { whoopUserId?: number }).whoopUserId,
         };
       },
     },
@@ -59,17 +79,22 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async signIn({ account, user }) {
+    async signIn({ account, user, profile }) {
       if (account?.provider === "whoop" && account.access_token && account.refresh_token) {
         const supabase = createServiceClient();
         const expiresAt = account.expires_at
           ? new Date(account.expires_at * 1000)
           : new Date(Date.now() + 3600 * 1000);
 
+        const whoopUserId =
+          (profile as { whoopUserId?: number } | undefined)?.whoopUserId ??
+          (await getWhoopUserProfile(account.access_token)).user_id;
+
         await supabase.from("user_integrations").upsert(
           {
             user_id: user.id,
             provider: "whoop",
+            whoop_user_id: whoopUserId,
             access_token: account.access_token,
             refresh_token: account.refresh_token,
             expires_at: expiresAt.toISOString(),
