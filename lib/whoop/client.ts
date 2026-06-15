@@ -1,4 +1,4 @@
-const WHOOP_API_BASE = "https://api.prod.whoop.com/developer/v1";
+const WHOOP_API_BASE = "https://api.prod.whoop.com/developer/v2";
 
 export interface WhoopTokenResponse {
   access_token: string;
@@ -18,8 +18,16 @@ export interface WhoopSleepStageSummary {
   disturbance_count?: number;
 }
 
+export interface WhoopSleepNeeded {
+  baseline_milli?: number;
+  need_from_sleep_debt_milli?: number;
+  need_from_recent_strain_milli?: number;
+  need_from_recent_nap_milli?: number;
+}
+
 export interface WhoopSleepScore {
   stage_summary?: WhoopSleepStageSummary;
+  sleep_needed?: WhoopSleepNeeded;
   sleep_performance_percentage?: number;
   sleep_consistency_percentage?: number;
   sleep_efficiency_percentage?: number;
