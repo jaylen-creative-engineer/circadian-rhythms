@@ -17,6 +17,8 @@ export function transformSleepRecord(
     (summary?.total_slow_wave_sleep_time_milli ?? 0) +
     (summary?.total_rem_sleep_time_milli ?? 0);
 
+  const sleepNeeded = sleep.score?.sleep_needed;
+
   return {
     whoop_id: sleep.id,
     user_id: userId,
@@ -24,7 +26,10 @@ export function transformSleepRecord(
     end_time: sleep.end,
     hrv_rmssd: recovery?.score?.hrv_rmssd_milli ?? null,
     resting_hr: recovery?.score?.resting_heart_rate ?? null,
+    recovery_score: recovery?.score?.recovery_score ?? null,
     sleep_performance: sleep.score?.sleep_performance_percentage ?? null,
+    sleep_debt_millis: sleepNeeded?.need_from_sleep_debt_milli ?? null,
+    sleep_need_baseline_millis: sleepNeeded?.baseline_milli ?? null,
     rem_pct: pct(summary?.total_rem_sleep_time_milli, totalSleep),
     deep_pct: pct(summary?.total_slow_wave_sleep_time_milli, totalSleep),
     light_pct: pct(summary?.total_light_sleep_time_milli, totalSleep),
