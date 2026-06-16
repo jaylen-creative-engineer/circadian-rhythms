@@ -1,14 +1,21 @@
 "use client";
 
+import { useNow } from "@/lib/hooks/use-now";
 import type { CircadianPrediction } from "@/lib/types";
-import { formatDuration, formatTime, isActiveWindow } from "@/lib/utils/time";
+import {
+  formatDuration,
+  formatRemainingDuration,
+  formatTime,
+  isActiveWindow,
+} from "@/lib/utils/time";
 
 interface GroggyCoverProps {
   prediction: CircadianPrediction;
 }
 
 export function GroggyCover({ prediction }: GroggyCoverProps) {
-  const active = isActiveWindow(prediction.groggy.start, prediction.groggy.end);
+  const now = useNow();
+  const active = isActiveWindow(prediction.groggy.start, prediction.groggy.end, now);
 
   if (!active) return null;
 
@@ -24,6 +31,9 @@ export function GroggyCover({ prediction }: GroggyCoverProps) {
       </p>
       <p className="mt-4 text-sm text-zinc-600">
         Cognitive output muted. Peak windows unlock after this clears.
+      </p>
+      <p className="mt-4 text-lg font-medium text-zinc-300">
+        {formatRemainingDuration(prediction.groggy.end, now)}
       </p>
     </div>
   );

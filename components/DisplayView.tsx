@@ -2,73 +2,111 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useNow } from "@/lib/hooks/use-now";
 import type { CircadianPrediction, DisplayMode } from "@/lib/types";
-import { formatTime, isActiveWindow } from "@/lib/utils/time";
+import { formatRemainingDuration, formatTime, isActiveWindow } from "@/lib/utils/time";
 import { EnergyTimeline } from "./EnergyTimeline";
 
 const REFRESH_MS = 15 * 60 * 1000;
 
 function DisplayContent({
   mode,
+  now,
   prediction,
 }: {
   mode: DisplayMode;
+  now: Date;
   prediction: CircadianPrediction;
 }) {
   switch (mode) {
     case "peak": {
-      const peak = prediction.peaks.find((p) => isActiveWindow(p.start, p.end));
-      const target = peak ?? prediction.peaks[0];
+      const peak = prediction.peaks.find((p) => isActiveWindow(p.start, p.end, now));
+      const target =
+        peak ?? prediction.peaks.find((p) => new Date(p.start) > now) ?? prediction.peaks[0];
       return (
         <div className="text-center">
           <p className="text-[#C8F135]/60 text-sm uppercase tracking-widest">
             {peak ? "Active Peak" : "Next Peak"}
           </p>
           <p className="mt-4 text-6xl font-bold text-[#C8F135]">
-            {formatTime(target.start)}
+            {peak ? formatRemainingDuration(peak.end, now) : formatTime(target.start)}
           </p>
           <p className="mt-2 text-zinc-500">
-            → {formatTime(target.end)}
+            {formatTime(target.start)} → {formatTime(target.end)}
           </p>
         </div>
       );
     }
-    case "groggy":
+    case "groggy": {
+      const active = isActiveWindow(prediction.groggy.start, prediction.groggy.end, now);
       return (
         <div className="text-center opacity-60">
-          <p className="text-sm uppercase tracking-widest text-zinc-500">Groggy</p>
+          <p className="text-sm uppercase tracking-widest text-zinc-500">
+            {active ? "Active Groggy Window" : "Groggy"}
+          </p>
           <p className="mt-4 text-5xl font-bold text-zinc-400">
-            {formatTime(prediction.groggy.start)}
+            {active
+              ? formatRemainingDuration(prediction.groggy.end, now)
+              : formatTime(prediction.groggy.start)}
           </p>
           <p className="mt-2 text-zinc-600">
-            {prediction.groggy.duration_min} min inertia
+            {formatTime(prediction.groggy.start)} → {formatTime(prediction.groggy.end)}
           </p>
         </div>
       );
-    case "dip":
+    }
+    case "dip": {
+      const active = isActiveWindow(prediction.dip.start, prediction.dip.end, now);
       return (
         <div className="text-center">
-          <p className="text-sm uppercase tracking-widest text-indigo-400">Dip</p>
-          <p className="mt-4 text-5xl font-bold text-indigo-400 capitalize">
-            {prediction.dip.depth}
+          <p className="text-sm uppercase tracking-widest text-indigo-400">
+            {active ? "Active Dip" : "Dip"}
+          </p>
+          <p
+            className={`mt-4 text-5xl font-bold text-indigo-400 ${
+              active ? "" : "capitalize"
+            }`}
+          >
+            {active
+              ? formatRemainingDuration(prediction.dip.end, now)
+              : prediction.dip.depth}
           </p>
           <p className="mt-2 text-zinc-500">
             {formatTime(prediction.dip.start)} – {formatTime(prediction.dip.end)}
           </p>
         </div>
       );
-    case "melatonin":
+    }
+    case "melatonin": {
+      const windDownActive = isActiveWindow(
+        prediction.wind_down_start,
+        prediction.melatonin_onset,
+        now
+      );
+      const melatoninActive = isActiveWindow(
+        prediction.melatonin_onset,
+        prediction.sleep_target,
+        now
+      );
+      const activeWindowEnd = windDownActive
+        ? prediction.melatonin_onset
+        : prediction.sleep_target;
       return (
         <div className="text-center">
-          <p className="text-sm uppercase tracking-widest text-purple-400">Wind Down</p>
+          <p className="text-sm uppercase tracking-widest text-purple-400">
+            {melatoninActive ? "Melatonin Window" : "Wind Down"}
+          </p>
           <p className="mt-4 text-5xl font-bold text-purple-300">
-            {formatTime(prediction.wind_down_start)}
+            {windDownActive || melatoninActive
+              ? formatRemainingDuration(activeWindowEnd, now)
+              : formatTime(prediction.wind_down_start)}
           </p>
           <p className="mt-2 text-zinc-500">
-            Sleep {formatTime(prediction.sleep_target)}
+            Sleep target {formatTime(prediction.sleep_target)}
           </p>
         </div>
       );
+    }
     case "compact":
       return (
         <div className="w-full max-w-md px-4">
@@ -89,6 +127,7 @@ export function DisplayView() {
   const searchParams = useSearchParams();
   const mode = (searchParams.get("mode") ?? "timeline") as DisplayMode;
   const [prediction, setPrediction] = useState<CircadianPrediction | null>(null);
+  const now = useNow();
 
   useEffect(() => {
     let active = true;
@@ -117,7 +156,7 @@ export function DisplayView() {
 
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center bg-black text-zinc-100">
-      <DisplayContent mode={mode} prediction={prediction} />
+      <DisplayContent mode={mode} now={now} prediction={prediction} />
     </div>
   );
 }
