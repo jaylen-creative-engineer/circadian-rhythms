@@ -1,4 +1,5 @@
 import type { NextAuthOptions } from "next-auth";
+import { getWhoopOAuthRedirectUri } from "./url";
 import {
   parseTokenExpiry,
   persistWhoopIntegration,
@@ -26,11 +27,15 @@ export const authOptions: NextAuthOptions = {
         url: "https://api.prod.whoop.com/oauth/oauth2/auth",
         params: {
           scope: WHOOP_SCOPES,
+          redirect_uri: getWhoopOAuthRedirectUri(),
         },
       },
       token: {
         async request({ params }) {
-          const tokens = await exchangeWhoopCode(params.code as string);
+          const tokens = await exchangeWhoopCode(
+            params.code as string,
+            getWhoopOAuthRedirectUri()
+          );
           return {
             tokens: {
               ...tokens,
@@ -43,7 +48,9 @@ export const authOptions: NextAuthOptions = {
         async request({ tokens }) {
           const profile = await getWhoopUserProfile(tokens.access_token as string);
           const userId =
-            (await resolveAppUserId(profile.user_id)) ?? crypto.randomUUID();
+            (await resolveAppUserId(profile.user_id)) ??
+            process.env.APP_USER_ID ??
+            crypto.randomUUID();
           const name =
             [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "WHOOP User";
 

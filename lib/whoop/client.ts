@@ -197,7 +197,10 @@ export async function refreshWhoopToken(
   return res.json() as Promise<WhoopTokenResponse>;
 }
 
-export async function exchangeWhoopCode(code: string): Promise<WhoopTokenResponse> {
+export async function exchangeWhoopCode(
+  code: string,
+  redirectUri: string
+): Promise<WhoopTokenResponse> {
   const res = await fetch("https://api.prod.whoop.com/oauth/oauth2/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -206,7 +209,7 @@ export async function exchangeWhoopCode(code: string): Promise<WhoopTokenRespons
       code,
       client_id: process.env.WHOOP_CLIENT_ID!,
       client_secret: process.env.WHOOP_CLIENT_SECRET!,
-      redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/whoop`,
+      redirect_uri: redirectUri,
     }),
   });
 
