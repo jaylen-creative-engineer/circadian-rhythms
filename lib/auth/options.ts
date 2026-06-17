@@ -1,5 +1,6 @@
 import type { NextAuthOptions } from "next-auth";
 import { createServiceClient } from "../supabase/server";
+import { getWhoopOAuthRedirectUri } from "./url";
 import { exchangeWhoopCode, getWhoopUserProfile } from "../whoop/client";
 
 const WHOOP_SCOPES = [
@@ -21,11 +22,15 @@ export const authOptions: NextAuthOptions = {
         url: "https://api.prod.whoop.com/oauth/oauth2/auth",
         params: {
           scope: WHOOP_SCOPES,
+          redirect_uri: getWhoopOAuthRedirectUri(),
         },
       },
       token: {
         async request({ params }) {
-          const tokens = await exchangeWhoopCode(params.code as string);
+          const tokens = await exchangeWhoopCode(
+            params.code as string,
+            getWhoopOAuthRedirectUri()
+          );
           return { tokens: { ...tokens, expires_at: Date.now() + tokens.expires_in * 1000 } };
         },
       },
