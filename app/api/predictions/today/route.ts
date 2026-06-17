@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import {
   buildPredictionForDate,
   demoPrediction,
-  resolveUserId,
 } from "@/lib/predictions/service";
+import { getStaticAppUserId, resolveUserId } from "@/lib/config/user";
 
 export async function GET() {
   try {
@@ -21,7 +21,11 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ prediction, demo: false });
+    return NextResponse.json({
+      prediction,
+      demo: false,
+      staticUser: Boolean(getStaticAppUserId()),
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Prediction failed";
     return NextResponse.json({ error: message }, { status: 500 });

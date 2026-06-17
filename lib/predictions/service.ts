@@ -1,6 +1,5 @@
 import { format, subDays } from "date-fns";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/options";
+import { resolveUserId } from "@/lib/config/user";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   computeCircadianPrediction,
@@ -8,10 +7,7 @@ import {
 } from "@/lib/circadian/compute";
 import type { CircadianPrediction, UserCalibration } from "@/lib/types";
 
-export async function resolveUserId(): Promise<string | null> {
-  const session = await getServerSession(authOptions);
-  return session?.user?.id ?? process.env.APP_USER_ID ?? process.env.DEMO_USER_ID ?? null;
-}
+export { resolveUserId } from "@/lib/config/user";
 
 export async function getLatestSleep(userId: string) {
   const supabase = createServiceClient();

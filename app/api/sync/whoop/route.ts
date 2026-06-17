@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { resolveUserId } from "@/lib/config/user";
+import { ensureWhoopIntegrationForRequest } from "@/lib/whoop/integration";
 import { syncAllWhoopUsers, syncWhoopForUser } from "@/lib/whoop/sync";
 import { processPendingWebhookEvents } from "@/lib/whoop/webhook-processor";
-import { resolveUserId } from "@/lib/predictions/service";
 
 function authorizeCron(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -22,11 +23,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, results, webhookResults });
     }
 
-    const userId = await resolveUserId();
+    const userId = await resolveUserId({ allowStatic: false });
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    await ensureWhoopIntegrationForRequest(userId);
     const result = await syncWhoopForUser(userId);
     return NextResponse.json({ ok: true, result });
   } catch (err) {

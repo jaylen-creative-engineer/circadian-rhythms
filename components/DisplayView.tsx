@@ -6,7 +6,7 @@ import type { CircadianPrediction, DisplayMode } from "@/lib/types";
 import { formatTime, isActiveWindow } from "@/lib/utils/time";
 import { EnergyTimeline } from "./EnergyTimeline";
 
-const REFRESH_MS = 15 * 60 * 1000;
+const REFRESH_MS = 5 * 60 * 1000;
 
 function DisplayContent({
   mode,
@@ -89,6 +89,7 @@ export function DisplayView() {
   const searchParams = useSearchParams();
   const mode = (searchParams.get("mode") ?? "timeline") as DisplayMode;
   const [prediction, setPrediction] = useState<CircadianPrediction | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -96,7 +97,14 @@ export function DisplayView() {
     async function load() {
       const res = await fetch("/api/predictions/today");
       const data = await res.json();
-      if (active && res.ok) setPrediction(data.prediction);
+      if (!active) return;
+      if (res.ok && data.prediction) {
+        setPrediction(data.prediction);
+        setError(null);
+        return;
+      }
+      setPrediction(null);
+      setError(data.error ?? "Unable to load predictions");
     }
 
     void load();
@@ -106,6 +114,14 @@ export function DisplayView() {
       clearInterval(id);
     };
   }, []);
+
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-black px-6 text-center text-zinc-500">
+        {error}
+      </div>
+    );
+  }
 
   if (!prediction) {
     return (

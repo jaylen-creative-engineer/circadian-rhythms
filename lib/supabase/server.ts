@@ -1,15 +1,22 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  requireSupabaseSecretKey,
+  requireSupabaseUrl,
+} from "./env";
 
-export function createServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_KEY;
+let serviceClient: SupabaseClient | undefined;
 
-  if (!url || !key) {
-    throw new Error("Missing Supabase environment variables");
+/** Service-role client for server-side writes (sync, webhooks, predictions). */
+export function createServiceClient(): SupabaseClient {
+  if (!serviceClient) {
+    serviceClient = createClient(requireSupabaseUrl(), requireSupabaseSecretKey(), {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
   }
+  return serviceClient;
+}
 
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+/** Reset cached client (useful in tests). */
+export function resetServiceClient(): void {
+  serviceClient = undefined;
 }

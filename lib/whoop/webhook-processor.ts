@@ -1,6 +1,7 @@
 import { createServiceClient } from "../supabase/server";
 import { buildPredictionForDate } from "../predictions/service";
 import { WhoopClient } from "./client";
+import { resolveAppUserId } from "./integration";
 import { getValidAccessToken } from "./sync";
 import { transformSleepRecord } from "./transform";
 import type { WhoopWebhookEvent } from "./webhook";
@@ -12,17 +13,6 @@ export interface WebhookProcessResult {
   message?: string;
 }
 
-async function resolveAppUserId(whoopUserId: number): Promise<string | null> {
-  const supabase = createServiceClient();
-  const { data } = await supabase
-    .from("user_integrations")
-    .select("user_id")
-    .eq("provider", "whoop")
-    .eq("whoop_user_id", whoopUserId)
-    .single();
-
-  return data?.user_id ?? null;
-}
 
 async function markEventStatus(
   traceId: string,
