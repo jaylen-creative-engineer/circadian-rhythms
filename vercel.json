@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/webhooks/whoop/reconcile",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/sync/whoop",
       "schedule": "0 6 * * *"
     }

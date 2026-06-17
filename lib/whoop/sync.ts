@@ -1,5 +1,6 @@
 import { subDays } from "date-fns";
 import { createServiceClient } from "../supabase/server";
+import { findWhoopIntegration } from "./integration";
 import { WhoopClient, refreshWhoopToken } from "./client";
 import { mergeRecoveryBySleepId, transformSleepRecord } from "./transform";
 
@@ -9,18 +10,15 @@ export interface SyncResult {
 }
 
 export async function getValidAccessToken(userId: string): Promise<string> {
-  const supabase = createServiceClient();
+  const integration = await findWhoopIntegration(userId);
 
-  const { data: integration, error } = await supabase
-    .from("user_integrations")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("provider", "whoop")
-    .single();
-
-  if (error || !integration) {
-    throw new Error("WHOOP integration not found");
+  if (!integration) {
+    throw new Error(
+      "WHOOP tokens are not saved yet. Click Reconnect WHOOP in Settings to link your account again."
+    );
   }
+
+  const supabase = createServiceClient();
 
   const expiresAt = new Date(integration.expires_at);
   if (expiresAt.getTime() > Date.now() + 60_000) {

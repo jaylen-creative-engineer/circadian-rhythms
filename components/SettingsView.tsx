@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -36,6 +36,12 @@ export function SettingsView() {
     setTimeout(() => setSaved(false), 2000);
   }
 
+  async function reconnectWhoop() {
+    setSyncResult(null);
+    await signOut({ redirect: false });
+    await signIn("whoop", { callbackUrl: "/dashboard/settings" });
+  }
+
   async function triggerSync() {
     setSyncing(true);
     setSyncResult(null);
@@ -66,7 +72,8 @@ export function SettingsView() {
       <section className="rounded-xl border border-zinc-800 bg-zinc-950 p-6">
         <h2 className="font-medium text-zinc-200">WHOOP Integration</h2>
         <p className="mt-1 text-sm text-zinc-500">
-          Connect your WHOOP account to sync sleep, recovery, and HRV data.
+          Sleep and recovery update automatically via WHOOP webhooks after each
+          night. Use Sync Now as a manual fallback.
         </p>
 
         {status === "loading" ? (
@@ -79,9 +86,22 @@ export function SettingsView() {
               disabled={syncing}
               className="rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-700 disabled:opacity-50"
             >
-              {syncing ? "Syncing…" : "Sync Now"}
+              {syncing ? "Syncing…" : "Sync Now (fallback)"}
             </button>
-            {syncResult && <p className="text-sm text-zinc-400">{syncResult}</p>}
+            <button
+              onClick={reconnectWhoop}
+              className="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-900"
+            >
+              Reconnect WHOOP
+            </button>
+            {syncResult && (
+              <p className="text-sm text-zinc-400">
+                {syncResult}
+                {syncResult.includes("Reconnect WHOOP") && (
+                  <span className="ml-2 text-[#C8F135]">Use the button above.</span>
+                )}
+              </p>
+            )}
           </div>
         ) : (
           <button

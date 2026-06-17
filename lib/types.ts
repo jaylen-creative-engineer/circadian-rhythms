@@ -39,6 +39,14 @@ export interface SleepRecord {
   synced_at?: string;
 }
 
+export interface AppUser {
+  id: string;
+  whoop_user_id?: number | null;
+  display_name?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface UserIntegration {
   id?: string;
   user_id: string;
