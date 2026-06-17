@@ -115,5 +115,4 @@ export const authOptions: NextAuthOptions = {
     signIn: "/dashboard/settings",
   },
   secret: process.env.NEXTAUTH_SECRET,
-  trustHost: true,
 };
