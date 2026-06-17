@@ -4,16 +4,41 @@ import { computeGroggy } from "./groggy";
 import { computePeaks } from "./peaks";
 import { computeDip } from "./dip";
 import { computeMelatonin } from "./melatonin";
+import {
+  computeRecoveryModifiers,
+  computeSleepDebtModifiers,
+  hrvToModifiers,
+  mergeModifiers,
+  millisToHours,
+} from "./modifiers";
 import type { CircadianPrediction, CycleInput } from "../types";
 
 const HOURS_24 = 24 * 60 * 60 * 1000;
 
-function computeConfidence(lastSyncAt?: Date | null): CircadianPrediction["confidence"] {
-  if (!lastSyncAt) return "low";
-  const age = Date.now() - lastSyncAt.getTime();
-  if (age > HOURS_24) return "low";
-  if (age > 12 * 60 * 60 * 1000) return "medium";
-  return "high";
+function computeConfidence(
+  lastSyncAt?: Date | null,
+  recoveryScore?: number | null,
+  sleepDebtHours?: number | null
+): CircadianPrediction["confidence"] {
+  let level: CircadianPrediction["confidence"] = "high";
+
+  if (lastSyncAt) {
+    const age = Date.now() - lastSyncAt.getTime();
+    if (age > HOURS_24) level = "low";
+    else if (age > 12 * 60 * 60 * 1000) level = "medium";
+  } else {
+    level = "low";
+  }
+
+  if (recoveryScore != null && recoveryScore < 34) {
+    level = level === "high" ? "medium" : "low";
+  }
+
+  if (sleepDebtHours != null && sleepDebtHours >= 1.5) {
+    level = level === "high" ? "medium" : "low";
+  }
+
+  return level;
 }
 
 export function computeCircadianPrediction(input: CycleInput): CircadianPrediction {
@@ -25,24 +50,45 @@ export function computeCircadianPrediction(input: CycleInput): CircadianPredicti
     sleepPerformance,
     hrvLastNight,
     hrvBaseline,
+    recoveryScore,
+    sleepDebtMillis,
+    sleepNeedBaselineMillis,
     date,
     calibration,
     lastSyncAt,
   } = input;
 
   const hrvAdj = computeHrvAdjustment(hrvLastNight, hrvBaseline);
-  const groggy = computeGroggy(wakeTime, deepPct, sleepPerformance, hrvAdj);
+
+  const modifierParts = [hrvToModifiers(hrvAdj)];
+
+  if (recoveryScore != null) {
+    modifierParts.push(computeRecoveryModifiers(recoveryScore));
+  }
+
+  if (sleepDebtMillis != null && sleepDebtMillis > 0) {
+    modifierParts.push(
+      computeSleepDebtModifiers(sleepDebtMillis, sleepNeedBaselineMillis)
+    );
+  }
+
+  const modifiers = mergeModifiers(...modifierParts);
+  const sleepDebtHours = millisToHours(sleepDebtMillis ?? null);
+
+  const groggy = computeGroggy(wakeTime, deepPct, sleepPerformance, modifiers);
   const peaks = computePeaks(
     wakeTime,
     groggy,
-    hrvAdj,
-    calibration?.peak_offset_min ?? 0
+    modifiers,
+    calibration?.peak_offset_min ?? 0,
+    hrvAdj.ratio
   );
-  const dip = computeDip(wakeTime, sleepPerformance, hrvAdj);
+  const dip = computeDip(wakeTime, sleepPerformance, modifiers);
   const melatonin = computeMelatonin(
+    wakeTime,
     sleepStart,
-    sleepEnd,
-    calibration?.melatonin_sensitivity_min ?? 0
+    calibration?.melatonin_sensitivity_min ?? 0,
+    modifiers
   );
 
   return {
@@ -67,7 +113,9 @@ export function computeCircadianPrediction(input: CycleInput): CircadianPredicti
     wind_down_start: formatISO(melatonin.windDownStart),
     sleep_target: formatISO(melatonin.sleepTarget),
     hrv_adjustment: hrvAdj.ratio,
-    confidence: computeConfidence(lastSyncAt),
+    recovery_score: recoveryScore ?? null,
+    sleep_debt_hours: sleepDebtHours,
+    confidence: computeConfidence(lastSyncAt, recoveryScore, sleepDebtHours),
   };
 }
 

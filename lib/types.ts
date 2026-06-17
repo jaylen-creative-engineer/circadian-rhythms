@@ -20,6 +20,8 @@ export interface CircadianPrediction {
   wind_down_start: string;
   sleep_target: string;
   hrv_adjustment: number;
+  recovery_score: number | null;
+  sleep_debt_hours: number | null;
   confidence: "high" | "medium" | "low";
 }
 
@@ -31,7 +33,10 @@ export interface SleepRecord {
   end_time: string;
   hrv_rmssd: number | null;
   resting_hr: number | null;
+  recovery_score: number | null;
   sleep_performance: number | null;
+  sleep_debt_millis: number | null;
+  sleep_need_baseline_millis: number | null;
   rem_pct: number | null;
   deep_pct: number | null;
   light_pct: number | null;
@@ -98,6 +103,9 @@ export interface CycleInput {
   sleepPerformance: number;
   hrvLastNight: number;
   hrvBaseline: number;
+  recoveryScore?: number | null;
+  sleepDebtMillis?: number | null;
+  sleepNeedBaselineMillis?: number | null;
   date: string;
   calibration?: UserCalibration;
   lastSyncAt?: Date | null;
