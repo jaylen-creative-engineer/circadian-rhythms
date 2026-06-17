@@ -41,7 +41,8 @@ export const authOptions: NextAuthOptions = {
             .eq("whoop_user_id", profile.user_id)
             .maybeSingle();
 
-          const userId = existing?.user_id ?? crypto.randomUUID();
+          const userId =
+            existing?.user_id ?? process.env.APP_USER_ID ?? crypto.randomUUID();
           const name =
             [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "WHOOP User";
 

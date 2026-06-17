@@ -10,7 +10,7 @@ import type { CircadianPrediction, UserCalibration } from "@/lib/types";
 
 export async function resolveUserId(): Promise<string | null> {
   const session = await getServerSession(authOptions);
-  return session?.user?.id ?? process.env.DEMO_USER_ID ?? null;
+  return session?.user?.id ?? process.env.APP_USER_ID ?? process.env.DEMO_USER_ID ?? null;
 }
 
 export async function getLatestSleep(userId: string) {
