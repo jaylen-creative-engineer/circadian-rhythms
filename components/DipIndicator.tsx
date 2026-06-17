@@ -1,7 +1,12 @@
 "use client";
 
+import { useNow } from "@/lib/hooks/use-now";
 import type { CircadianPrediction } from "@/lib/types";
-import { formatTime, isActiveWindow } from "@/lib/utils/time";
+import {
+  formatRemainingDuration,
+  formatTime,
+  isActiveWindow,
+} from "@/lib/utils/time";
 
 const DEPTH_STYLES = {
   mild: { label: "Mild Dip", color: "#6366f1", opacity: 0.5 },
@@ -14,7 +19,8 @@ interface DipIndicatorProps {
 }
 
 export function DipIndicator({ prediction }: DipIndicatorProps) {
-  const active = isActiveWindow(prediction.dip.start, prediction.dip.end);
+  const now = useNow();
+  const active = isActiveWindow(prediction.dip.start, prediction.dip.end, now);
   const style = DEPTH_STYLES[prediction.dip.depth];
 
   return (
@@ -36,9 +42,14 @@ export function DipIndicator({ prediction }: DipIndicatorProps) {
         {formatTime(prediction.dip.start)} – {formatTime(prediction.dip.end)}
       </p>
       {active && (
-        <p className="mt-3 text-sm text-indigo-300/80">
-          Post-lunch energy dip active. Schedule low-cognitive tasks.
-        </p>
+        <div className="mt-3 space-y-1">
+          <p className="text-lg font-medium text-indigo-200">
+            {formatRemainingDuration(prediction.dip.end, now)}
+          </p>
+          <p className="text-sm text-indigo-300/80">
+            Post-lunch energy dip active. Schedule low-cognitive tasks.
+          </p>
+        </div>
       )}
     </div>
   );

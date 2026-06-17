@@ -1,21 +1,15 @@
 "use client";
 
-import { parseISO } from "date-fns";
-import { useEffect, useState } from "react";
+import { useNow } from "@/lib/hooks/use-now";
 import type { CircadianPrediction } from "@/lib/types";
-import { formatTime, isActiveWindow } from "@/lib/utils/time";
+import { formatRemainingDuration, formatTime, isActiveWindow } from "@/lib/utils/time";
 
 interface MelatoninClockProps {
   prediction: CircadianPrediction;
 }
 
 export function MelatoninClock({ prediction }: MelatoninClockProps) {
-  const [now, setNow] = useState(new Date());
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, []);
+  const now = useNow();
 
   const windDownActive = isActiveWindow(
     prediction.wind_down_start,
@@ -28,11 +22,10 @@ export function MelatoninClock({ prediction }: MelatoninClockProps) {
     now
   );
 
-  const target = parseISO(prediction.sleep_target);
-  const minsToSleep = Math.max(
-    0,
-    Math.round((target.getTime() - now.getTime()) / 60_000)
-  );
+  const activeWindowEnd = windDownActive
+    ? prediction.melatonin_onset
+    : prediction.sleep_target;
+  const activeWindowLabel = windDownActive ? "wind down" : "melatonin window";
 
   return (
     <div
@@ -55,7 +48,7 @@ export function MelatoninClock({ prediction }: MelatoninClockProps) {
 
       {(windDownActive || melatoninActive) && (
         <p className="mt-4 text-lg font-medium text-purple-200">
-          {minsToSleep > 0 ? `${minsToSleep} min to sleep target` : "Sleep window open"}
+          {formatRemainingDuration(activeWindowEnd, now)} in {activeWindowLabel}
         </p>
       )}
     </div>

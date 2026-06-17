@@ -11,6 +11,16 @@ export function formatDuration(min: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+export function remainingMinutes(end: string, now = new Date()): number {
+  const e = parseISO(end).getTime();
+  const n = now.getTime();
+  return Math.max(0, Math.ceil((e - n) / 60_000));
+}
+
+export function formatRemainingDuration(end: string, now = new Date()): string {
+  return `${formatDuration(remainingMinutes(end, now))} remaining`;
+}
+
 export function isActiveWindow(start: string, end: string, now = new Date()): boolean {
   const s = parseISO(start);
   const e = parseISO(end);

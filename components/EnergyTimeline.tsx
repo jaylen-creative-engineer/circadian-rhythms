@@ -1,7 +1,14 @@
 "use client";
 
+import { useNow } from "@/lib/hooks/use-now";
 import type { CircadianPrediction } from "@/lib/types";
-import { formatTime, isActiveWindow, segmentPosition, VOLT } from "@/lib/utils/time";
+import {
+  formatRemainingDuration,
+  formatTime,
+  isActiveWindow,
+  segmentPosition,
+  VOLT,
+} from "@/lib/utils/time";
 
 interface EnergyTimelineProps {
   prediction: CircadianPrediction;
@@ -59,9 +66,11 @@ function buildSegments(p: CircadianPrediction): WindowSegment[] {
 }
 
 export function EnergyTimeline({ prediction, compact }: EnergyTimelineProps) {
+  const now = useNow();
   const segments = buildSegments(prediction);
   const dayStart = prediction.wake_time;
   const dayEnd = prediction.sleep_target;
+  const activeSegment = segments.find((seg) => isActiveWindow(seg.start, seg.end, now));
 
   return (
     <div className={`w-full ${compact ? "space-y-2" : "space-y-4"}`}>
@@ -72,7 +81,7 @@ export function EnergyTimeline({ prediction, compact }: EnergyTimelineProps) {
 
       <div className="relative h-3 rounded-full bg-zinc-800 overflow-hidden">
         {segments.map((seg) => {
-          const active = isActiveWindow(seg.start, seg.end);
+          const active = isActiveWindow(seg.start, seg.end, now);
           const pos = segmentPosition(
             seg.start,
             seg.end,
@@ -97,10 +106,16 @@ export function EnergyTimeline({ prediction, compact }: EnergyTimelineProps) {
         })}
       </div>
 
+      {compact && activeSegment && (
+        <p className="text-center text-sm font-medium text-zinc-300">
+          {activeSegment.label}: {formatRemainingDuration(activeSegment.end, now)}
+        </p>
+      )}
+
       {!compact && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {segments.map((seg) => {
-            const active = isActiveWindow(seg.start, seg.end);
+            const active = isActiveWindow(seg.start, seg.end, now);
             return (
               <div
                 key={seg.label}
@@ -120,6 +135,11 @@ export function EnergyTimeline({ prediction, compact }: EnergyTimelineProps) {
                 <p className="mt-1 text-xs text-zinc-500">
                   {formatTime(seg.start)} – {formatTime(seg.end)}
                 </p>
+                {active && (
+                  <p className="mt-2 text-xs font-medium text-[#C8F135]">
+                    {formatRemainingDuration(seg.end, now)}
+                  </p>
+                )}
               </div>
             );
           })}

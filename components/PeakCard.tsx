@@ -1,18 +1,24 @@
 "use client";
 
+import { useNow } from "@/lib/hooks/use-now";
 import type { CircadianPrediction } from "@/lib/types";
-import { formatTime, isActiveWindow } from "@/lib/utils/time";
+import {
+  formatRemainingDuration,
+  formatTime,
+  isActiveWindow,
+} from "@/lib/utils/time";
 
 interface PeakCardProps {
   prediction: CircadianPrediction;
 }
 
 export function PeakCard({ prediction }: PeakCardProps) {
-  const activePeak = prediction.peaks.find((p) => isActiveWindow(p.start, p.end));
+  const now = useNow();
+  const activePeak = prediction.peaks.find((p) => isActiveWindow(p.start, p.end, now));
 
   if (!activePeak) {
     const nextPeak = prediction.peaks.find(
-      (p) => new Date(p.start) > new Date()
+      (p) => new Date(p.start) > now
     );
     if (!nextPeak) return null;
 
@@ -35,6 +41,9 @@ export function PeakCard({ prediction }: PeakCardProps) {
       <h2 className="mt-1 text-3xl font-bold text-[#C8F135]">High Energy</h2>
       <p className="mt-2 text-sm text-zinc-300">
         {formatTime(activePeak.start)} – {formatTime(activePeak.end)}
+      </p>
+      <p className="mt-3 text-lg font-medium text-[#C8F135]">
+        {formatRemainingDuration(activePeak.end, now)}
       </p>
       <span className="mt-3 inline-block rounded-full bg-[#C8F135]/20 px-3 py-1 text-xs font-medium text-[#C8F135]">
         {activePeak.quality} quality
